@@ -1,3 +1,4 @@
+```kotlin
 package com.xcontrol.launcher
 
 import android.app.Activity
@@ -11,6 +12,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.view.Gravity
 import android.graphics.Color
+import android.os.Build
 import java.util.Locale
 
 class MainActivity : Activity(), TextToSpeech.OnInitListener {
@@ -51,10 +53,20 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         batteryButton.text = "CHECK BATTERY"
         batteryButton.setOnClickListener { checkBattery() }
 
+        val startButton = Button(this)
+        startButton.text = "▶ START ASSISTANT"
+        startButton.setOnClickListener { startAssistant() }
+
+        val stopButton = Button(this)
+        stopButton.text = "■ STOP ASSISTANT"
+        stopButton.setOnClickListener { stopAssistant() }
+
         layout.addView(title)
         layout.addView(status)
         layout.addView(voiceButton)
         layout.addView(batteryButton)
+        layout.addView(startButton)
+        layout.addView(stopButton)
 
         setContentView(layout)
     }
@@ -62,13 +74,30 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     override fun onInit(result: Int) {
         if (result == TextToSpeech.SUCCESS) {
             speaker.language = Locale.US
-            speaker.speak(
-                "X Control is ready.",
-                TextToSpeech.QUEUE_FLUSH,
-                null,
-                "welcome"
-            )
+            respond("X-Control is ready.")
         }
+    }
+
+    private fun startAssistant() {
+        try {
+            val serviceIntent = Intent(this, AssistantService::class.java)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+
+            respond("X-Control background service started.")
+        } catch (e: Exception) {
+            respond("Could not start the background service.")
+        }
+    }
+
+    private fun stopAssistant() {
+        val serviceIntent = Intent(this, AssistantService::class.java)
+        stopService(serviceIntent)
+        respond("X-Control background service stopped.")
     }
 
     private fun listen() {
@@ -77,7 +106,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             RecognizerIntent.EXTRA_LANGUAGE_MODEL,
             RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
         )
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+        intent.putExtra(
+            RecognizerIntent.EXTRA_LANGUAGE,
+            Locale.getDefault()
+        )
 
         try {
             startActivityForResult(intent, voiceRequest)
@@ -100,7 +132,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             val words = data.getStringArrayListExtra(
                 RecognizerIntent.EXTRA_RESULTS
             )
-            val command = words?.firstOrNull()?.lowercase(Locale.ROOT) ?: return
+
+            val command = words
+                ?.firstOrNull()
+                ?.lowercase(Locale.ROOT) ?: return
+
             handleCommand(command)
         }
     }
@@ -108,9 +144,15 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private fun handleCommand(command: String) {
         when {
             command.contains("battery") -> checkBattery()
-            command.startsWith("open ") -> openApp(command.removePrefix("open ").trim())
-            command.contains("hello") -> respond("Hello! How can I help?")
-            else -> respond("Sorry, I don't know that command yet.")
+
+            command.startsWith("open ") ->
+                openApp(command.removePrefix("open ").trim())
+
+            command.contains("hello") ->
+                respond("Hello! How can I help?")
+
+            else ->
+                respond("Sorry, I don't know that command yet.")
         }
     }
 
@@ -142,12 +184,19 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             null,
             android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED)
         )
+
         val level = battery?.getIntExtra("level", -1) ?: -1
-        respond("Your battery is at $level percent.")
+
+        if (level >= 0) {
+            respond("Your battery is at $level percent.")
+        } else {
+            respond("I couldn't check the battery level.")
+        }
     }
 
     private fun respond(message: String) {
         status.text = message
+
         if (::speaker.isInitialized) {
             speaker.speak(
                 message,
@@ -163,6 +212,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             speaker.stop()
             speaker.shutdown()
         }
+
         super.onDestroy()
     }
 }
+```
