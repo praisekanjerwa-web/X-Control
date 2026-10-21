@@ -33,6 +33,10 @@
             </intent-filter>
 
         </activity>
+        <service
+    android:name=".AssistantService"
+    android:exported="false"
+    android:stopWithTask="false" />
 
         <service
             android:name=".AssistantService"
