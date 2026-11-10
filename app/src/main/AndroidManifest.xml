@@ -38,10 +38,5 @@
     android:exported="false"
     android:stopWithTask="false" />
 
-        <service
-            android:name=".AssistantService"
-            android:exported="false"
-            android:foregroundServiceType="microphone" />
-
     </application>
 </manifest>
