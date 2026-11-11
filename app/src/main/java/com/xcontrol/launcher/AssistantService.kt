@@ -17,6 +17,7 @@ class AssistantService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+
         startForeground(
             NOTIFICATION_ID,
             createNotification()
@@ -41,6 +42,7 @@ class AssistantService : Service() {
                 "X-Control Assistant",
                 NotificationManager.IMPORTANCE_LOW
             )
+
             manager.createNotificationChannel(channel)
         }
 
@@ -64,4 +66,3 @@ class AssistantService : Service() {
         return null
     }
 }
-```
