@@ -1,4 +1,3 @@
-```kotlin
 package com.xcontrol.launcher
 
 import android.app.Notification
