@@ -1,4 +1,3 @@
-```kotlin
 package com.xcontrol.launcher
 
 import android.app.Activity
@@ -19,12 +18,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     private lateinit var status: TextView
     private lateinit var speaker: TextToSpeech
+
     private val voiceRequest = 100
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        speaker = TextToSpeech(this, this)
 
         val layout = LinearLayout(this)
         layout.orientation = LinearLayout.VERTICAL
@@ -69,12 +67,19 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         layout.addView(stopButton)
 
         setContentView(layout)
+
+        speaker = TextToSpeech(this, this)
     }
 
     override fun onInit(result: Int) {
         if (result == TextToSpeech.SUCCESS) {
-            speaker.language = Locale.US
-            respond("X-Control is ready.")
+            val languageResult = speaker.setLanguage(Locale.US)
+
+            if (languageResult != TextToSpeech.LANG_MISSING_DATA &&
+                languageResult != TextToSpeech.LANG_NOT_SUPPORTED
+            ) {
+                respond("X-Control is ready.")
+            }
         }
     }
 
@@ -89,6 +94,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             }
 
             respond("X-Control background service started.")
+
         } catch (e: Exception) {
             respond("Could not start the background service.")
         }
@@ -97,15 +103,18 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private fun stopAssistant() {
         val serviceIntent = Intent(this, AssistantService::class.java)
         stopService(serviceIntent)
+
         respond("X-Control background service stopped.")
     }
 
     private fun listen() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+
         intent.putExtra(
             RecognizerIntent.EXTRA_LANGUAGE_MODEL,
             RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
         )
+
         intent.putExtra(
             RecognizerIntent.EXTRA_LANGUAGE,
             Locale.getDefault()
@@ -114,7 +123,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         try {
             startActivityForResult(intent, voiceRequest)
         } catch (e: Exception) {
-            status.text = "Voice recognition is unavailable."
+            respond("Voice recognition is unavailable.")
         }
     }
 
@@ -216,4 +225,3 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         super.onDestroy()
     }
 }
-```
